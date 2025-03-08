@@ -1,0 +1,12 @@
+fastapi[standard]
+fastapi_pagination
+pydantic
+sqlmodel
+uvicorn
+requests
+python-dotenv
+apscheduler
+bs4
+transformers
+torch
+aiohttp
