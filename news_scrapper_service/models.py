@@ -17,7 +17,7 @@ class NewsArticle(SQLModel, table=True):
     reward_signal: float = 0.0
 
 class NewsArticleUpdate(SQLModel):
-    """Schema for updating reward_signal, predicted_action, and actual_price_change."""
+    """NewsArticle Update Schema for updating reward_signal, predicted_action, and actual_price_change."""
     reward_signal: Optional[float] = None
     predicted_action: Optional[str] = None  # "Buy", "Sell", "Hold"
     actual_price_change: Optional[float] = None
