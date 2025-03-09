@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from databases import create_db_and_tables, get_session
 from fetcher import fetch_news, save_news
 from sqlmodel import Session, select
-from models import NewsArticle
+from models import NewsArticle, NewsArticleUpdate
 from apscheduler.schedulers.background import BackgroundScheduler
 import threading
 from fastapi_pagination.ext.sqlalchemy import paginate
@@ -38,5 +38,26 @@ def fetch_and_store_news():
 def get_news(session: Session = Depends(get_session)):
     # query = select(NewsArticle).statement  # Convert SQLModel query to SQLAlchemy query
     return paginate(session, select(NewsArticle))
+
+@app.patch("/news/{article_id}", response_model=NewsArticle)
+def update_news_article(article_id: int, update_data: NewsArticleUpdate, session: Session = Depends(get_session)):
+    """Update an existing news article's reward_signal, predicted_action, or actual_price_change."""
+    article = session.get(NewsArticle, article_id)
+
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    # Update only fields that are provided in the request
+    if update_data.reward_signal is not None:
+        article.reward_signal = update_data.reward_signal
+    if update_data.predicted_action is not None:
+        article.predicted_action = update_data.predicted_action
+    if update_data.actual_price_change is not None:
+        article.actual_price_change = update_data.actual_price_change
+
+    session.add(article)
+    session.commit()
+    session.refresh(article)  # Get updated values
+    return article
 
 # Run API Server: uvicorn main:app --reload
