@@ -4,15 +4,27 @@ import re
 from dotenv import load_dotenv
 from sqlmodel import Session, select
 from databases import engine
-from models import NewsArticle
-from datetime import datetime
+from models.news import NewsArticle
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
-from sentiment import sentiment_analyzer
+from services.sentiment_service import sentiment_analyzer
 
 # Load API key from .env
 load_dotenv()
 API_KEY = os.getenv("NEWSAPI_KEY")
 BASE_URL = "https://newsapi.org/v2/everything"
+def fetch_and_store_news():
+    """Fetches news, processes sentiment, and saves it to the database."""
+    articles = fetch_news()  # Fetch news inside the function (no arguments needed)
+    if not articles:
+        print("⚠️ No new articles found.")
+        return
+
+    # Save news to database
+    save_news(articles)
+    print("✅ News fetched and stored successfully.")
+
+
 def is_truncated(content: str) -> bool:
     """Detects if content is truncated based on '[+ number chars]' pattern."""
     return bool(re.search(r"\[\+\s*\d+\s*chars\]", content))
@@ -36,10 +48,16 @@ def fetch_news():
     }
     
     if last_published_at:
-        params["from"] = last_published_at.isoformat()  # Fetch news from the last recorded timestamp
+        # Shift by +1 second to avoid skipping an article that has the exact same publishedAt
+        from_time = last_published_at + timedelta(seconds=1)  # Fetch news from the last recorded timestamp
+         # Format to YYYY-mm-ddTHH:MM:SSZ (remove microseconds)
+        params["from"] = from_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        params["to"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+        print(f"Fetching articles from: {params['from']} to {params["to"]}")
     
     response = requests.get(BASE_URL, params=params)
     if response.status_code == 200:
+        print(response)
         return response.json()["articles"]
     else:
         print("Error fetching news:", response.json())
