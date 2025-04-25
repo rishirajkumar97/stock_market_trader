@@ -49,11 +49,14 @@ def fetch_news():
     
     if last_published_at:
         # Shift by +1 second to avoid skipping an article that has the exact same publishedAt
-        from_time = last_published_at + timedelta(seconds=1)  # Fetch news from the last recorded timestamp
-         # Format to YYYY-mm-ddTHH:MM:SSZ (remove microseconds)
-        params["from"] = from_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-        params["to"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-        print(f"Fetching articles from: {params['from']} to {params["to"]}")
+        from_time = last_published_at + timedelta(seconds=1)  # Fetch news from the last recorded timestamp  
+    else:
+        from dateutil.relativedelta import relativedelta
+        from_time = datetime.utcnow() - relativedelta(months=1)#IF Db is new as per freetier we can take till one month back, for additional safety 32 days.
+    # Format to YYYY-mm-ddTHH:MM:SSZ (remove microseconds)
+    params["from"] = from_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    params["to"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    print(f"Fetching articles from: {params['from']} to {params["to"]}")
     
     response = requests.get(BASE_URL, params=params)
     if response.status_code == 200:
@@ -104,7 +107,9 @@ def save_news(articles):
 
         # Save processed articles with sentiment scores
         for i, article in enumerate(new_articles):
-            sentiment_score, sentiment_label = sentiment_results[i]
+            result = sentiment_results[i]
+            sentiment_label = result["sentiment"]
+            sentiment_score = result["score"]
             print(sentiment_score)
             news_entry = NewsArticle(
                 title=article["title"],
@@ -113,7 +118,7 @@ def save_news(articles):
                 url=article["url"],
                 source=article["source"]["name"],
                 published_at=datetime.strptime(article["publishedAt"], "%Y-%m-%dT%H:%M:%SZ"),
-                sentiment_score=sentiment_score[2] - sentiment_score[0],  # Positive - Negative
+                sentiment_score=sentiment_score,
                 sentiment_label=sentiment_label
             )
             session.add(news_entry)
