@@ -7,7 +7,7 @@ import json
 class SentimentAnalyzer:
     """Sentiment Analyzer using Google's Gemini API"""
 
-    def __init__(self, api_key: Optional[str] = "AIzaSyAzod_JHzYcBBrXeAMZ6dHg7r8QHcpzAgQ"):
+    def __init__(self, api_key: Optional[str] = None):
         """Initialize the Gemini API client
         
         Args:
@@ -25,7 +25,7 @@ class SentimentAnalyzer:
         
         # Set up the prompt template
         self.prompt_template = """
-        Assume you are a Financial Analyst, analysing the news for stock market indicators.
+        Assume you are a Financial Analyst, analysing the news for stock market indicat
         I want you to analyze the sentiment of the following news text excerpt. The text data is scraped from the web.
         Please clean the data with step by step thinking and take only the news info related to the financial stock market of London. If the cleaned data is not related then give it a neutral score.
         Return a sentiment classification as "Positive", "Neutral", or "Negative".
